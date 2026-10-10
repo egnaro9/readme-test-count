@@ -1,0 +1,47 @@
+[project]
+name = "readme-test-count"
+version = "0.1.0"
+description = "Fail CI if README.md's advertised test count disagrees with the suite. Fails closed on a missing count, an errored collection, and a test file that silently collected nothing."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Erik Hill", email = "contact@erikhill.dev" }]
+keywords = [
+    "pytest", "ci", "documentation", "readme", "testing", "quality-assurance",
+    "continuous-integration", "documentation-drift", "pre-commit",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Utilities",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.scripts]
+readme-test-count = "readme_test_count.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/egnaro9/readme-test-count"
+Repository = "https://github.com/egnaro9/readme-test-count"
+Issues = "https://github.com/egnaro9/readme-test-count/issues"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["readme_test_count*"]

@@ -1,0 +1,60 @@
+# The suite, every Python version the package claims to support, and the tool run against
+# this repository.
+#
+# The matrix is not decoration. pyproject.toml advertises 3.10 through 3.14 in its
+# classifiers, and a package whose advertised support is tested on one interpreter is
+# exactly the kind of unchecked claim this tool exists to catch. If a version is dropped
+# from CI it has to be dropped from the classifiers in the same commit.
+#
+# Stated plainly because it matters: the machine this was written on has only 3.14, so 3.14
+# is the only version the suite has actually run on. This matrix is the FIRST execution on
+# 3.10 through 3.13, not a re-confirmation of a local run. If one of them goes red, the
+# classifier comes out rather than the job.
+#
+# No paths filter and no `if:` on either job. A job skipped by its own condition is reported
+# as a success, which is the quietest way for a gate to stop checking anything.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest tests/ -q
+
+  dogfood:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+
+      # The count at the top of README.md is enforced by the thing it describes.
+      - name: This README's advertised test count must match this suite
+        run: readme-test-count
+
+      # And the gate must be able to fail. The step above passes on a correct repository and
+      # would pass just as happily with the comparison deleted, so plant a wrong count and
+      # require a nonzero exit. Checked with an explicit `if`, never `!`, so that a crash
+      # exiting 2 is not read as a successful detection.
+      - name: Prove the gate can fail
+        run: python scripts/prove_the_gate_fails.py
