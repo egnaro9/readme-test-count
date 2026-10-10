@@ -3,14 +3,11 @@
 Fail CI if your README's advertised test count disagrees with what pytest actually collects.
 
 ```bash
-pip install readme-test-count
+pip install git+https://github.com/egnaro9/readme-test-count
 readme-test-count            # in your project root
 ```
 
-> Not on PyPI until the first release runs. Until then:
-> `pip install git+https://github.com/egnaro9/readme-test-count`
-> Delete this note in the same commit that cuts the release, or it becomes the thing this
-> tool exists to catch.
+Not on PyPI, by choice. Install from git.
 
 ```
 ok: README.md and the suite agree on 23 tests (2 mentions)
@@ -65,7 +62,7 @@ the same problem one level down.
 ## In CI
 
 ```yaml
-      - run: pip install readme-test-count
+      - run: pip install git+https://github.com/egnaro9/readme-test-count
       - name: README's advertised test count must match the suite
         run: readme-test-count
 ```
