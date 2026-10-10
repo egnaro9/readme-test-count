@@ -7,6 +7,11 @@ pip install readme-test-count
 readme-test-count            # in your project root
 ```
 
+> Not on PyPI until the first release runs. Until then:
+> `pip install git+https://github.com/egnaro9/readme-test-count`
+> Delete this note in the same commit that cuts the release, or it becomes the thing this
+> tool exists to catch.
+
 ```
 ok: README.md and the suite agree on 23 tests (2 mentions)
 ```
