@@ -1,6 +1,6 @@
 [project]
 name = "readme-test-count"
-version = "0.1.0"
+version = "0.1.1"
 description = "Fail CI if README.md's advertised test count disagrees with the suite. Fails closed on a missing count, an errored collection, and a test file that silently collected nothing."
 readme = "README.md"
 requires-python = ">=3.10"

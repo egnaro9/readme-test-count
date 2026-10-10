@@ -9,7 +9,10 @@ It FAILS CLOSED, deliberately, in four ways a looser version would let pass:
 
   - a README with NO advertised count fails, rather than passing because there was nothing to
     compare. "Nothing to check" is the most common way a check stops checking.
-  - a collection that errors fails, rather than being read as zero tests.
+  - a collection that errors fails. Both ways: one that prints no number at all, and one
+    that prints a number ALONGSIDE import errors. pytest says "117 tests collected, 6 errors"
+    and exits 2, and reading that 117 is how this tool briefly had the defect it exists to
+    catch. Found by migrating its first consumer.
   - EVERY occurrence must match, not the first. Two of the five repositories stated the count
     twice, and one of them had both stale.
   - a test FILE that contributes no collected test fails. This one was learned hours after the
@@ -61,14 +64,39 @@ class Result:
         return 0 if self.ok else 1
 
 
+# pytest's own exit codes, which are a stronger signal than its summary text.
+EXIT_MEANING = {
+    2: "pytest was interrupted, which for --collect-only means at least one module failed to "
+       "import. The count it printed covers only the modules that did load.",
+    3: "an internal pytest error.",
+    4: "pytest usage error.",
+    5: "no tests were collected at all.",
+}
+
+
 def collect(root: pathlib.Path) -> tuple[int, str]:
-    """Return (collected count, pytest's stdout). Raises CollectionError if unreadable."""
+    """Return (collected count, pytest's stdout). Raises CollectionError if unusable.
+
+    The exit code is checked BEFORE the count, and that ordering is the whole point. A
+    collection with import errors still prints a number: pytest reports
+    "117 tests collected, 6 errors" and exits 2. An earlier version of this read the 117 and
+    treated it as the project's count, which was found by migrating the first consumer, whose
+    suite collected 117 of its 223 tests in an incomplete environment. A partial count is not
+    a smaller truth, it is a different number.
+    """
     p = subprocess.run(
         [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider"],
         cwd=root,
         capture_output=True,
         text=True,
     )
+    if p.returncode != 0:
+        why = EXIT_MEANING.get(p.returncode, "pytest exited nonzero.")
+        raise CollectionError(
+            f"pytest --collect-only exited {p.returncode}: {why}\n"
+            "A partial or interrupted collection is not a test count.\n"
+            + (p.stdout or p.stderr)[-1500:]
+        )
     m = COLLECTED.search(p.stdout)
     if not m:
         raise CollectionError(

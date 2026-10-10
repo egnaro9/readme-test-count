@@ -10,7 +10,7 @@ readme-test-count            # in your project root
 Not on PyPI, by choice. Install from git.
 
 ```
-ok: README.md and the suite agree on 23 tests (2 mentions)
+ok: README.md and the suite agree on 26 tests (2 mentions)
 ```
 
 ## Why
@@ -31,7 +31,7 @@ reports success:
 | situation | what a looser check does | what this does |
 |---|---|---|
 | README states no count | passes, nothing to compare | **fails.** "Nothing to check" is how a check stops checking |
-| `pytest --collect-only` errors | reads it as zero tests | **fails.** A collection with no number is an error, not a zero |
+| `pytest --collect-only` errors | reads the number it printed anyway | **fails.** Checked by exit code, before the count |
 | README states the count twice | checks the first one | **fails** unless every occurrence matches |
 | a test file collected nothing | passes, pytest reported no error | **fails.** See below |
 
@@ -49,6 +49,24 @@ installed the optional extra, collected 67.
 So a count is only meaningful if the environment is complete, and the only evidence of
 incompleteness is a file on disk that produced nothing. The tool compares the collection
 against the filesystem, not just against your README.
+
+The sharper version of the same problem turned up the first time this was installed
+somewhere else. A module that fails to **import** does not vanish quietly, but pytest still
+prints a count beside the errors:
+
+```
+<N> tests collected, 6 errors in 0.12s      <- the count is printed beside the errors
+```
+
+and exits 2. The first release read that N. It was caught migrating the first consumer, whose
+suite is 223 and collected only 117 of them, because the package under test was not installed
+in the environment running the check. A partial count is not a smaller truth, it is a
+different number, and it would have agreed with a README claiming 117.
+
+The placeholder above is not coyness. Writing the real pytest line here makes this README
+advertise a count of its own, and the tool rejected this file for it while this paragraph was
+being written. Third time. The exit code is now checked
+before the count, so exit 2 (interrupted) and exit 5 (nothing collected) both fail.
 
 A module that is genuinely meant to be skipped in this job says so in its own text:
 
@@ -97,7 +115,7 @@ directory scanned for files that collected nothing.
 ## It checks itself
 
 This repository's CI runs the tool on this repository, so the count at the top of this file
-is enforced by the thing it describes. The suite is 23 tests and every documented failure
+is enforced by the thing it describes. The suite is 26 tests and every documented failure
 mode above has one, including the cases that only fail if the tool is working: a broken
 collection must not read as zero, and a silently skipped module must not read as healthy.
 

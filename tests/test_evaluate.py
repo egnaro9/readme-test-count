@@ -195,3 +195,45 @@ def test_silent_empty_test_files_reads_the_filesystem_not_the_count(
     missing, exempt = silent_empty_test_files(project, stdout)
     assert missing == ["tests/test_never_collected.py"]
     assert exempt == []
+
+
+# ---- the hole the first consumer found (2026-10-10) ----
+#
+# pytest prints a count even when modules failed to import: "117 tests collected, 6 errors",
+# exit 2. The original read that number. It was caught while migrating deadgate, whose suite
+# collected 117 of its 223 tests because the package under test was not installed in the
+# environment doing the check. A partial count is not a smaller truth, it is a different
+# number, and it would have agreed with a README stating 117.
+
+
+def test_a_partial_collection_with_import_errors_is_not_a_count(tmp_path: pathlib.Path) -> None:
+    readme(tmp_path, "2 tests")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_fine.py").write_text(THREE_TESTS[: THREE_TESTS.index("def test_c")])
+    (tmp_path / "tests" / "test_broken_import.py").write_text(
+        "import a_module_that_does_not_exist\ndef test_q(): pass\n"
+    )
+    r = evaluate(tmp_path)
+    assert not r.ok, "a collection with import errors was accepted as the project's count"
+    assert r.collected is None, "the partial count leaked through as if it were real"
+    joined = "\n".join(r.lines)
+    assert "exited 2" in joined
+    assert "partial or interrupted collection is not a test count" in joined
+    # and it must NOT blame importorskip, which is a different diagnosis entirely
+    assert "importorskip" not in joined
+
+
+def test_collect_raises_on_a_partial_collection(tmp_path: pathlib.Path) -> None:
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_ok.py").write_text("def test_a(): pass\n")
+    (tmp_path / "tests" / "test_bad.py").write_text("import nope_not_a_module\n")
+    with pytest.raises(CollectionError, match="exited 2"):
+        collect(tmp_path)
+
+
+def test_a_project_with_no_tests_at_all_fails(tmp_path: pathlib.Path) -> None:
+    """pytest exits 5 for zero collected. Zero is a number, and it is not a suite."""
+    readme(tmp_path, "0 tests")
+    r = evaluate(tmp_path)
+    assert not r.ok, "an empty project agreed with a README advertising zero tests"
+    assert "exited 5" in "\n".join(r.lines)
